@@ -21,10 +21,12 @@ figma.ui.onmessage = async (msg) => {
   if (msg.type === 'appendText') {
     const selectedNode = figma.currentPage.selection[0];
 
-    if (selectedNode && selectedNode.type === 'TEXT') {
-      // Append text to the existing text node
-      await figma.loadFontAsync(selectedNode.fontName as FontName);
-      selectedNode.characters += msg.text;
+    if (selectedNode.type === 'TEXT') {
+        // Load all fonts used in the selected text node
+        await figma.loadFontAsync(selectedNode.fontName as FontName);
+
+        // Append text to the existing text node
+        selectedNode.characters += msg.text;
     }
   }
 };

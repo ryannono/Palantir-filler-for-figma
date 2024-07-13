@@ -50,6 +50,7 @@ function App() {
       switch (e.key) {
         case "Enter":
           if (fillerType) return appendLoremIpsum();
+          if (!inputRef.current.value) return;
           setFillerType(FILLER_OPTIONS.find(option => inputRef.current?.value[0].toUpperCase() === option[0]));
           inputRef.current.value = "";    
           break;
@@ -61,7 +62,7 @@ function App() {
     } else if (e.type === "keyup") {
       const fillerAmount = Math.min(Number(inputRef.current?.value ?? 0), 1000);
       if (fillerType) return setLoremIpsum(ipsumGenerator.current.generate(fillerAmount, fillerType));
-      setCanConfirmFillerType(FILLER_OPTIONS.some(option => option[0] === inputRef.current?.value[0].toUpperCase()));
+      setCanConfirmFillerType(FILLER_OPTIONS.some(option => option[0] === inputRef.current?.value[0]?.toUpperCase()));
     }
   }, [fillerType, appendLoremIpsum, removeSelection]);
 
