@@ -1,0 +1,21 @@
+.removableTag {
+  display: flex;
+  padding: 4px 4px 4px 7px;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+
+  border-radius: 2000px;
+  background: #5F6B7C60;
+
+  transition: all 0.5s ease;
+
+  img {
+    cursor: pointer;
+  }
+
+  &:hover {
+    background-color: #47505d;
+  }
+}

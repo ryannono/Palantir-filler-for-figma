@@ -1,26 +1,30 @@
-figma.showUI(__html__);
+figma.showUI(__html__, { width: 400, height: 184 });
 
-figma.ui.onmessage = (msg) => {
-  if (msg.type === 'create-rectangles') {
-    const nodes = [];
+// Function to check if the current selection is a text node
+function checkSelection() {
+  const selectedNode = figma.currentPage.selection[0];
 
-    for (let i = 0; i < msg.count; i++) {
-      const rect = figma.createRectangle();
-      rect.x = i * 150;
-      rect.fills = [{ type: 'SOLID', color: { r: 1, g: 0.5, b: 0 } }];
-      figma.currentPage.appendChild(rect);
-      nodes.push(rect);
-    }
-
-    figma.currentPage.selection = nodes;
-    figma.viewport.scrollAndZoomIntoView(nodes);
-
-    // This is how figma responds back to the ui
-    figma.ui.postMessage({
-      type: 'create-rectangles',
-      message: `Created ${msg.count} Rectangles`,
-    });
+  if (selectedNode && selectedNode.type === 'TEXT') {
+    figma.ui.postMessage({ type: 'selectionChange', isTextNode: true });
+  } else {
+    figma.ui.postMessage({ type: 'selectionChange', isTextNode: false });
   }
+}
 
-  figma.closePlugin();
+// Listen for selection changes
+figma.on('selectionchange', checkSelection);
+
+// initial check
+checkSelection();
+
+figma.ui.onmessage = async (msg) => {
+  if (msg.type === 'appendText') {
+    const selectedNode = figma.currentPage.selection[0];
+
+    if (selectedNode && selectedNode.type === 'TEXT') {
+      // Append text to the existing text node
+      await figma.loadFontAsync(selectedNode.fontName as FontName);
+      selectedNode.characters += msg.text;
+    }
+  }
 };

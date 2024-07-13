@@ -1,0 +1,43 @@
+.inputFieldContainer {
+  display: flex;
+  align-items: center;
+  background-color: #1C2127;
+  padding: 0 22px;
+  gap: 15px;
+}
+
+.palantirLogo {
+  width: 12px;
+}
+
+.leftContent {
+  flex-grow: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.inputField {
+  background-color: #1C2127;
+  font-size: 14px;
+  display: flex;
+  padding: 10px 0;
+  height: 50px;
+  width: 100%;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+  border: 0;
+  color: white;
+
+  &::placeholder {
+    color: #ABB3BF;
+    font-weight: 200;
+    font-size: 12px;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: none;
+  }
+}

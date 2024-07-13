@@ -9,6 +9,7 @@
     "allowSyntheticDefaultImports": true,
     "removeComments": true,
     "noImplicitAny": false,
+    "strict": true,
     "moduleResolution": "node",
     "typeRoots": ["./node_modules/@types", "./node_modules/@figma"]
   }
