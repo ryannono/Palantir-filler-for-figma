@@ -3,8 +3,11 @@ import { OptionButton } from './components/optionButton/optionButton';
 import { InputField } from './components/inputField/inputField';
 import { Shortcut } from './components/shortcut/shortcut';
 import { RemovableTag } from './components/removableTag/removableTag';
-import { FILLER_OPTIONS, TFillerOption } from './util/fillerOptions';
-import { LoremIpsumGenerator } from './util/loremIpsumGenerator';
+import { LoremIpsumGenerator } from '../plugin/util/loremIpsumGenerator';
+import { TFillerOption, FILLER_OPTIONS } from '../plugin/util/fillerOptions';
+import { postLoremIpsum } from './util/postLoremIpsum';
+import { postClosePlugin } from './util/postClosePlugin';
+import { NAV_KEYS } from './util/NAV_KEYS';
 import palantirLogo from "./assets/palantirLogo.svg";
 import asterics from "./assets/asterics.svg";
 import './index.css';
@@ -14,7 +17,6 @@ function App() {
   const [canConfirmFillerType, setCanConfirmFillerType] = useState(false);
   const [fillerType, setFillerType] = useState<TFillerOption | undefined>(undefined);
   const [loremIpsum, setLoremIpsum] = useState("");
-
   const inputRef = useRef<HTMLInputElement>(null);
   const optionButtonRefs = useRef(FILLER_OPTIONS.map(() => React.createRef<HTMLButtonElement>()));
   const ipsumGenerator = useRef(new LoremIpsumGenerator());
@@ -34,52 +36,49 @@ function App() {
     }
   }, []);
 
-  const appendLoremIpsum = useCallback(() => {
-    parent.postMessage({
-      pluginMessage: {
-        type: 'appendText',
-        text: loremIpsum
-      }
-    }, '*');
-  }, [loremIpsum]);
+  const onInputKeyUp = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!inputRef.current) return;
 
-  const closePlugin = useCallback(() => {
-    parent.postMessage({
-      pluginMessage: { type: 'close' }
-    }, '*');
-  }, [loremIpsum]);
+    if (!fillerType) {
+      return setCanConfirmFillerType(FILLER_OPTIONS.some(option => option[0] === inputRef.current?.value[0]?.toUpperCase()));
+    }
 
-  const onInput = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    // if not cycling through output (with nav keys) or inputting a new amount discard
+    if (isNaN(parseInt(e.key)) && e.key !== ' ' && !Object.values(NAV_KEYS).includes(e.key)) return;
+
+    const fillerAmount = Math.min(parseInt(inputRef.current?.value ?? 0), 1000);
+
+    if (fillerAmount > 0) {
+      setLoremIpsum(ipsumGenerator.current.generate(fillerAmount, fillerType));
+    }
+  }, [fillerType])
+
+  const onInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!inputRef.current) return;
   
-    if (e.type === "keydown") {
-      switch (e.key) {
-        case "Enter":
-          if (fillerType) return appendLoremIpsum();
-          if (!inputRef.current.value) return;
-          setFillerType(FILLER_OPTIONS.find(option => inputRef.current?.value[0].toUpperCase() === option[0]));
-          inputRef.current.value = "";    
-          break;
-        case "Backspace":
-          if (inputRef.current.value) return;
-          removeSelection();
-          break;
-      }
-    } else if (e.type === "keyup") {
-      const fillerAmount = Math.min(Number(inputRef.current?.value ?? 0), 1000);
-      if (fillerType) return setLoremIpsum(ipsumGenerator.current.generate(fillerAmount, fillerType));
-      setCanConfirmFillerType(FILLER_OPTIONS.some(option => option[0] === inputRef.current?.value[0]?.toUpperCase()));
+    switch (e.key) {
+      case "Enter":
+        if (fillerType) return postLoremIpsum(loremIpsum);
+        if (!inputRef.current.value) return;
+        setFillerType(FILLER_OPTIONS.find(option => inputRef.current?.value[0].toUpperCase() === option[0]));
+        inputRef.current.value = "";    
+        break;
+        
+      case "Backspace":
+        if (inputRef.current.value) return;
+        removeSelection();
+        break;
     }
-  }, [fillerType, appendLoremIpsum, removeSelection]);
+  }, [fillerType, removeSelection, loremIpsum]);
 
   const onPluginKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Escape") return closePlugin();
+    if (e.key === "Escape") return postClosePlugin();
     
-    if (!["ArrowUp", "ArrowDown", "Tab"].includes(e.key)) return;
+    if (!Object.values(NAV_KEYS).includes(e.key)) return;
     e.preventDefault();
     const refs = [inputRef, ...optionButtonRefs.current];
     const currentIndex = refs.findIndex(ref => ref.current === document.activeElement);
-    const isArrowUp = e.key === "ArrowUp";
+    const isArrowUp = e.key === NAV_KEYS.ArrowUp;
   
     const nextIndex = isArrowUp
       ? (currentIndex === 0 ? refs.length : currentIndex) - 1
@@ -118,8 +117,8 @@ function App() {
           </> : undefined}
         rightItem={<Shortcut disabled={fillerType ? !loremIpsum : !canConfirmFillerType} />}
         autoFocus={true}
-        onKeyUp={onInput}
-        onKeyDown={onInput}
+        onKeyUp={onInputKeyUp}
+        onKeyDown={onInputKeyDown}
         placeholder={!fillerType ? "Enter filler type..." : "Enter amount ( # ) ..."}
       />
       <div className='divider' />
