@@ -55,13 +55,19 @@ figma.on('run', async ({ command, parameters }) => {
       checkSelection();
       figma.on('selectionchange', checkSelection);
       figma.ui.onmessage = async (msg) => {
-        if (msg.type === 'appendText') {
-          try {
-            await appendTextToSelection(msg.text);
-          } catch (error) {
-            console.error('Error in UI append:', error);
-            figma.notify('Failed to append text from UI');
-          }
+        switch (msg.type) {
+          case 'appendText':
+            try {
+              await appendTextToSelection(msg.text);
+            } catch (e) {
+              console.error('Error in UI append:', e);
+              figma.notify('Failed to append text from UI');
+            }
+            break;
+        
+          case 'close':
+            figma.closePlugin('Plugin exited successfully');
+            break;
         }
       };
       return;

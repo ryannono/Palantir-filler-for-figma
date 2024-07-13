@@ -43,6 +43,12 @@ function App() {
     }, '*');
   }, [loremIpsum]);
 
+  const closePlugin = useCallback(() => {
+    parent.postMessage({
+      pluginMessage: { type: 'close' }
+    }, '*');
+  }, [loremIpsum]);
+
   const onInput = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!inputRef.current) return;
   
@@ -67,6 +73,8 @@ function App() {
   }, [fillerType, appendLoremIpsum, removeSelection]);
 
   const onPluginKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") return closePlugin();
+    
     if (!["ArrowUp", "ArrowDown", "Tab"].includes(e.key)) return;
     e.preventDefault();
     const refs = [inputRef, ...optionButtonRefs.current];
@@ -92,7 +100,7 @@ function App() {
 
   if (!textNodeSelected) {
     return (
-      <div className={"zeroStateContainer"}>
+      <div onKeyDown={onPluginKeyDown} className={"zeroStateContainer"}>
         <img className={"palantirLogo"} src={palantirLogo} alt="Palantir Logo" />
         Select a text layer
       </div>)
