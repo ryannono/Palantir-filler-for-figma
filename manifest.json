@@ -6,6 +6,7 @@
   "ui": "dist/ui.html",
   "editorType": ["figma", "figjam"],
   "networkAccess": { "allowedDomains": ["https://fonts.googleapis.com", "https://fonts.gstatic.com"] },
+  "documentAccess": "dynamic-page",
   "menu": [
     {"name": "Launch plugin", "command": "launch"},
     {
