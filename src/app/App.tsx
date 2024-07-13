@@ -68,12 +68,14 @@ function App() {
         if (inputRef.current.value) return;
         removeSelection();
         break;
+
+      case "Escape":
+        postClosePlugin();
+        break;
     }
   }, [fillerType, removeSelection, loremIpsum]);
 
-  const onPluginKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Escape") return postClosePlugin();
-    
+  const onPluginKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {    
     if (!Object.values(NAV_KEYS).includes(e.key)) return;
     e.preventDefault();
     const refs = [inputRef, ...optionButtonRefs.current];
