@@ -61,7 +61,7 @@ figma.on('run', async ({ command, parameters }) => {
               await appendTextToSelection(msg.text);
             } catch (e) {
               console.error('Error in UI append:', e);
-              figma.notify('Failed to append text from UI');
+              figma.notify('Failed to append text from UI, make sure you have a text layer selected :)');
             }
             break;
         
@@ -90,6 +90,6 @@ figma.on('run', async ({ command, parameters }) => {
     figma.closePlugin();
   } catch (error) {
     console.error('Error in quick insert:', error);
-    figma.closePlugin('Failed to append text');
+    figma.closePlugin('Failed to append text, make sure you have a text layer selected :)');
   }
 });
