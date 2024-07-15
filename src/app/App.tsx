@@ -1,9 +1,8 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useReducer, useRef } from 'react';
 import { OptionButton } from './components/optionButton/optionButton';
 import { InputField } from './components/inputField/inputField';
 import { Shortcut } from './components/shortcut/shortcut';
 import { RemovableTag } from './components/removableTag/removableTag';
-import { LoremIpsumGenerator } from '../plugin/util/loremIpsumGenerator';
 import { TFillerOption, FILLER_OPTIONS } from '../plugin/util/fillerOptions';
 import { postLoremIpsum } from './util/postLoremIpsum';
 import { postClosePlugin } from './util/postClosePlugin';
@@ -11,92 +10,87 @@ import { NAV_KEYS } from './util/NAV_KEYS';
 import palantirLogo from "./assets/palantirLogo.svg";
 import asterics from "./assets/asterics.svg";
 import './index.css';
+import { INITIAL_PLUGIN_STATE, reducer } from './util/reducer';
 
 function App() {
-  const [textNodeSelected, setTextNodeSelected] = useState(false);
-  const [canConfirmFillerType, setCanConfirmFillerType] = useState(false);
-  const [fillerType, setFillerType] = useState<TFillerOption | undefined>(undefined);
-  const [loremIpsum, setLoremIpsum] = useState("");
+  const [
+    { 
+      canConfirmFillerType,
+      loremIpsum,
+      fillerType,
+      textNodeSelected
+    }, 
+    dispatch 
+  ] = useReducer(reducer, INITIAL_PLUGIN_STATE);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const optionButtonRefs = useRef(FILLER_OPTIONS.map(() => React.createRef<HTMLButtonElement>()));
-  const ipsumGenerator = useRef(new LoremIpsumGenerator());
 
-  const removeSelection = useCallback(() => {
-    setFillerType(undefined);
-    setCanConfirmFillerType(false);
-  }, []);
-
-  const selectButtonOption = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-    const buttonText = (e.currentTarget.childNodes[0].textContent ?? undefined) as TFillerOption | undefined;
-    setFillerType(buttonText);
-
+  const resetInput = () => {
     if (inputRef.current) {
       inputRef.current.value = "";
       inputRef.current.focus();
     }
+  }
+
+  const removeSelection = useCallback(() => dispatch({type: "RESET"}), []);
+
+  const selectButtonOption = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    const buttonText = (e.currentTarget.childNodes[0].textContent ?? undefined) as TFillerOption | undefined;
+    dispatch({type: "SET_FILLER_TYPE", payload: buttonText})
+    resetInput();
   }, []);
 
   const onInputKeyUp = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!inputRef.current) return;
-
-    if (!fillerType) {
-      return setCanConfirmFillerType(FILLER_OPTIONS.some(option => option[0] === inputRef.current?.value[0]?.toUpperCase()));
-    }
-
-    // if not cycling through output (with nav keys) or inputting a new amount discard
-    if (isNaN(parseInt(e.key)) && e.key !== ' ' && !Object.values(NAV_KEYS).includes(e.key)) return;
-
-    const fillerAmount = Math.min(parseInt(inputRef.current?.value ?? 0), 1000);
-
-    if (fillerAmount > 0) {
-      setLoremIpsum(ipsumGenerator.current.generate(fillerAmount, fillerType));
-    }
-  }, [fillerType])
+    dispatch({type: "ADJUST_TO_KEYUP", payload: {keyPressed: e.key, currentInputValue: inputRef.current?.value}})
+  }, [])
 
   const onInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!inputRef.current) return;
-  
     switch (e.key) {
       case "Enter":
-        if (fillerType) return postLoremIpsum(loremIpsum);
-        if (!inputRef.current.value) return;
-        setFillerType(FILLER_OPTIONS.find(option => inputRef.current?.value[0].toUpperCase() === option[0]));
-        inputRef.current.value = "";    
+        if (fillerType) postLoremIpsum(loremIpsum);
+        else {
+          dispatch({type: "SET_FILLER_TYPE", payload: inputRef.current?.value});
+          resetInput();
+        }   
         break;
         
       case "Backspace":
-        if (inputRef.current.value) return;
-        removeSelection();
-        break;
-
-      case "Escape":
-        postClosePlugin();
+        if (!inputRef.current?.value) removeSelection();
         break;
     }
-  }, [fillerType, removeSelection, loremIpsum]);
+  }, [loremIpsum, fillerType]);
 
   const onPluginKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {    
     if (!Object.values(NAV_KEYS).includes(e.key)) return;
+    
     e.preventDefault();
+    
     const refs = [inputRef, ...optionButtonRefs.current];
     const currentIndex = refs.findIndex(ref => ref.current === document.activeElement);
     const isArrowUp = e.key === NAV_KEYS.ArrowUp;
-  
     const nextIndex = isArrowUp
       ? (currentIndex === 0 ? refs.length : currentIndex) - 1
       : (currentIndex + 1) % refs.length;
   
     refs[nextIndex]?.current?.focus();
-    setCanConfirmFillerType(Boolean(nextIndex));
+    dispatch({type: "SET_CAN_CONFIRM_FILLER_TYPE", payload: Boolean(nextIndex)})
   };
 
   React.useEffect(() => {
     window.onmessage = (event) => {
       const { type, ...rest } = event.data.pluginMessage;
       if (type === 'selectionChange') {
-        setTextNodeSelected(rest.isTextNode);
+        dispatch({type: "SET_TEXT_NODE_SELECTED", payload: rest.isTextNode})
       }
     };
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") postClosePlugin();
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
   }, []);
 
   if (!textNodeSelected) {
