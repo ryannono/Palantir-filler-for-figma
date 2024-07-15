@@ -27,6 +27,7 @@ figma.on('run', async ({ command, parameters }) => {
   try {
     const amount = Math.max(1, parseInt(parameters?.amount as string, 10) || 1);
     await appendTextToSelection(new LoremIpsumGenerator().generate(amount, fillerType));
+    figma.notify(`Successfully inserted ${amount} ${fillerType.toLowerCase()}${amount > 1 ? "s" : ""}`);
     figma.closePlugin();
   } catch (error) {
     console.error('Error in quick insert:', error);
