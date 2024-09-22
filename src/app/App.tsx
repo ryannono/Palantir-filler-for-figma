@@ -115,6 +115,7 @@ function App() {
         autoFocus={true}
         onKeyUp={onInputKeyUp}
         onKeyDown={onInputKeyDown}
+        onInput={}
         placeholder={!fillerType ? "Enter filler type..." : "Enter amount ( # ) ..."}
       />
       <div className='divider' />
